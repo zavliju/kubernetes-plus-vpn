@@ -1,0 +1,99 @@
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  name: "kubernetes-plus-vpn-cronjob-production"
+  namespace: "production"
+  labels:
+    environment: "production"
+    project: rkubernetes-plus-vpn
+    service: kubernetes-plus-vpn-cronjob
+    type: "kubernetes_plus_vpn"
+spec:
+  schedule: "*/15 * * * *"
+  jobTemplate:
+    metadata:
+      name: "kubernetes-plus-vpn-cronjob-production"
+      namespace: "production"
+      labels:
+        environment: "production"
+        project: kubernetes-plus-vpn
+        service: kubernetes-plus-vpn-cronjob
+        type: "kubernetes_plus_vpn"
+    spec:
+      template:
+        metadata:
+          labels:
+            environment: "production"
+            project: kubernetes-plus-vpn
+            service: kubernetes-plus-vpn-cronjob
+            type: "kubernetes_plus_vpn"
+        spec:
+          restartPolicy: OnFailure
+          volumes:
+            - name: kubernetes-plus-vpn-credentials
+              secret:
+                secretName: kubernetes-plus-vpn-credentials
+            - name: dev-net-tun
+              hostPath:
+                path: /dev/net/tun
+            - name: temp
+              emptyDir: {}
+          containers:
+            # Job container
+            - name: kubernetes-plus-vpn-cronjob-production
+              image: gcr.io/kumparan-data/kubernetes_plus_vpn_cronjob_production:v1
+              securityContext:
+                privileged: true
+                capabilities:
+                  add:
+                    - NET_ADMIN
+              imagePullPolicy: Always
+              command: ["/bin/sh","-c"]
+              args:
+                - |
+                  echo "Start the openvpn daemon"
+                  openvpn --config ./name_ovpn.ovpn &
+                  OPENVPN_PID=$!
+                  echo "Start the cronjob"
+                  python cron.py
+                  touch /temp/job-terminated
+                  kill -9 $OPENVPN_PID
+                  EXIT_CODE=$?
+                  if [ $EXIT_CODE -eq 0 ]
+                  then
+                      echo "Successfully running job"
+                  else
+                      echo "Job failed"
+                      return $EXIT_CODE
+                  fi
+              resources:
+                requests:
+                  cpu: 200m
+                  memory: 64Mi
+                limits:
+                  cpu: 400m
+                  memory: 128Mi
+              volumeMounts:
+                - name: kubernetes-plus-vpn-credentials
+                  mountPath: /secrets
+                  readOnly: true
+                - mountPath: /dev/net/tun
+                  name: dev-net-tun
+                - name: temp
+                  mountPath: /temp
+              env:
+                - name: SERVICE_NAME
+                  value: "kubernetes-plus-vpn-cronjob-production"
+                - name: SERVICE_VERSION
+                  value: "v1"
+                - name: DEBUG_MODE
+                  value: "0"
+                - name: GOOGLE_APPLICATION_CREDENTIALS
+                  value: "/secrets/credentials.json"
+              volumeMounts:
+                - name: kubernetes-plus-vpn-credentials
+                  mountPath: /secrets
+                  readOnly: true
+                - name: temp
+                  mountPath: /temp
+                  readOnly: true

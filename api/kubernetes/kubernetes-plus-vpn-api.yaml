@@ -1,0 +1,41 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: "kubernetes-plus-vpn-api"
+  namespace: "production"
+  labels:
+    environment: "production"
+    project: kubernetes-plus-vpn-api
+    service: kubernetes-plus-vpn
+spec:
+  template:
+    metadata:
+      name: "kubernetes-plus-vpn-api-production"
+      namespace: "production"
+      labels:
+        environment: "production"
+        project: kubernetes-plus-vpn-api
+        service: kubernetes-plus-vpn
+    spec:
+      containers:
+        # Job container
+        - name: kubernetes-plus-vpn-api
+          image: gcr.io/kubernetes-plus-vpn/kubernetes_plus_vpn_apiproduction:v1
+          imagePullPolicy: Always
+          ports:
+          - containerPort: 5000
+            protocol: TCP
+          resources:
+            requests:
+              cpu: 128m
+              memory: 64Mi
+            limits:
+              cpu: 256m
+              memory: 128Mi
+          env:
+            - name: SERVICE_NAME
+              value: "kubernetes-plus-vpn-api-production"
+            - name: SERVICE_VERSION
+              value: "v1"
+            - name: ES_HOSTS
+              value: elasticsearch.production.svc.cluster.local:9200

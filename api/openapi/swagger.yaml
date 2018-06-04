@@ -1,0 +1,119 @@
+swagger: "2.0"
+info:
+  description: "This is definition for the `rec-article-scoring-api` service."
+  version: "1.0.0"
+  title: "Article Scoring API"
+  termsOfService: ""
+  contact:
+    name: "Slack channel: #rec-article-scoring"
+    url: "https://kumparan.slack.com/messages/G9BJEC92L"
+externalDocs:
+  description: "Quip document"
+  url: "https://kumparan.quip.com/folder/recommender-article-scoring"
+tags:
+- name: "Article scoring"
+  description: "List of recommended stories"
+schemes:
+- "http"
+paths:
+  /v1/article_scoring:
+    get:
+      tags:
+      - "Recommended article"
+      summary: "Get list of recommended stories"
+      description: "Get list of recommended stories"
+      operationId: "getRecommendedStories"
+      produces:
+      - "application/json"
+      parameters:
+      - in: "query"
+        name: "page"
+        type: "integer"
+        format: "int32"
+        description: "The page number"
+        default: 1
+      - in: "query"
+        name: "limit"
+        type: "integer"
+        format: "int32"
+        description: "The number of stories per page (max: 10 stories)."
+        default: 10
+      - in: "query"
+        name: "topic_id"
+        type: "string"
+        description: "The topic ID"
+      - in: "query"
+        name: "verbose"
+        type: "boolean"
+        description: "The state of verbosity(true or false(or blank))"
+      responses:
+        200:
+          description: "200 OK"
+          schema:
+            $ref: "#/definitions/APIResponseArticleScoringV1"
+definitions:
+  ArticleScoringV1:
+    type: "object"
+    properties:
+      article_score:
+        type: "number"
+        format: "float"
+      is_adult_content:
+        type: "string"
+      publish_date:
+        type: "date"
+      publisher_id:
+        type: "string"
+      status:
+        type: "string"
+      story_id:
+        type: "string"
+      topics_id:
+        type: "array"
+        items:
+          type: "string"
+      user_id:
+        type: "string"
+  APIResponseArticleScoringV1:
+    type: "object"
+    properties:
+      limit:
+        type: "integer"
+        format: "int32"
+      page:
+        type: "integer"
+        format: "int32"
+      data:
+        type: "object"
+        properties:
+          stories:
+            type: "array"
+            items:
+              $ref: "#/definitions/ArticleScoringV1"
+          took_ms:
+            type: "integer"
+          total_hits:
+            type: "integer"
+          page:
+            type: "integer"
+
+      status:
+        type: "integer"
+        format: "int32"
+    example:
+      data:
+        limit: 1
+        page: 2
+        stories:
+          - article_score: 49.6313972
+            is_adult_content: "false"
+            publish_date: "2018-06-04T02:06:12"
+            publisher_id: "kumparan-kuliner"
+            status: "publish"
+            story_id: "27431110790516490"
+            topics_id: "['22661216', '57302239', '166098530', '168987411']"
+            user_id: "1164946745"
+        took_ms: 260
+        total_hits: 2443
+      status: 200
+
